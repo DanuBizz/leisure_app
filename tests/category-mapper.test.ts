@@ -37,3 +37,7 @@ test("ordnet Unterkategorie Restaurant korrekt zu", () => {
 test("ordnet Unterkategorie Wanderroute korrekt zu", () => {
   assert.equal(mapOsmTagsToSubcategory({ route: "hiking" }), "Wanderroute");
 });
+
+test("übersetzt generische Unterkategorie playground in Deutsch", () => {
+  assert.equal(mapOsmTagsToSubcategory({ shop: "playground" }), "Spielplatz");
+});

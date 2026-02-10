@@ -11,6 +11,14 @@ import {
 
 const RADIUS_OPTIONS = [1, 3, 5, 10] as const;
 
+function createInitialSubcategoryFilters(): Record<AppCategory, string | null> {
+  const initial = {} as Record<AppCategory, string | null>;
+  APP_CATEGORIES.forEach((category) => {
+    initial[category] = null;
+  });
+  return initial;
+}
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -19,6 +27,9 @@ export default function Home() {
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [radius, setRadius] = useState<number>(5);
   const [categories, setCategories] = useState<AppCategory[]>([...APP_CATEGORIES]);
+  const [subcategoryFilters, setSubcategoryFilters] = useState<Record<AppCategory, string | null>>(
+    () => createInitialSubcategoryFilters(),
+  );
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [loadingGeocode, setLoadingGeocode] = useState(false);
@@ -97,6 +108,48 @@ export default function Home() {
 
     return initial;
   }, [activities]);
+
+  const subcategoriesByCategory = useMemo(() => {
+    const initial = new Map<AppCategory, string[]>();
+    APP_CATEGORIES.forEach((category) => initial.set(category, []));
+
+    for (const activity of activities) {
+      if (!activity.subcategory) {
+        continue;
+      }
+
+      const current = initial.get(activity.category) ?? [];
+      if (!current.includes(activity.subcategory)) {
+        current.push(activity.subcategory);
+        current.sort((a, b) => a.localeCompare(b, "de"));
+        initial.set(activity.category, current);
+      }
+    }
+
+    return initial;
+  }, [activities]);
+
+  useEffect(() => {
+    setSubcategoryFilters((current) => {
+      let changed = false;
+      const next = { ...current };
+
+      APP_CATEGORIES.forEach((category) => {
+        const selectedSubcategory = current[category];
+        if (!selectedSubcategory) {
+          return;
+        }
+
+        const available = subcategoriesByCategory.get(category) ?? [];
+        if (!available.includes(selectedSubcategory)) {
+          next[category] = null;
+          changed = true;
+        }
+      });
+
+      return changed ? next : current;
+    });
+  }, [subcategoriesByCategory]);
 
   function toggleCategory(category: AppCategory) {
     setCategories((current) => {
@@ -179,15 +232,19 @@ export default function Home() {
       <div className="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-emerald-400/10 blur-3xl" />
 
       <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6 px-4">
-        <header className="rounded-3xl border border-white/15 bg-slate-900/55 p-6 shadow-[0_20px_70px_rgba(8,47,73,0.45)] backdrop-blur-2xl md:p-8">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-3xl">🚀</span>
-            <h1 className="text-3xl font-bold tracking-tight text-white md:text-5xl">VibeRadar</h1>
-            <span className="rounded-full border border-cyan-300/35 bg-cyan-400/20 px-3 py-1 text-xs font-semibold tracking-wide text-cyan-100">
-              Live • Freizeit in deiner Nähe
+        <header className="relative overflow-hidden rounded-3xl border border-white/15 bg-slate-900/55 p-6 text-center shadow-[0_20px_70px_rgba(8,47,73,0.45)] backdrop-blur-2xl md:p-10">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.18),transparent_60%)]" />
+          <div className="relative flex flex-col items-center gap-4">
+            <span className="inline-flex items-center gap-2 rounded-full border border-cyan-300/35 bg-cyan-400/20 px-4 py-1 text-xs font-semibold tracking-wide text-cyan-100">
+              <span>🚀</span>
+              <span>Live • Freizeit in deiner Nähe</span>
             </span>
+            <h1 className="bg-gradient-to-r from-cyan-200 via-white to-violet-200 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent md:text-6xl">
+              VibeRadar
+            </h1>
+            <div className="h-1 w-28 rounded-full bg-gradient-to-r from-cyan-400 via-violet-400 to-emerald-400" />
           </div>
-          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-200 md:text-base">
+          <p className="relative mx-auto mt-4 max-w-3xl text-sm leading-relaxed text-slate-200 md:text-base">
             Entdecke die besten Spots rund um dich – mit smarten Kategorien, modernem Look und schnellen Kartenlinks.
           </p>
         </header>
@@ -333,6 +390,11 @@ export default function Home() {
                 }
 
                 const meta = CATEGORY_META[category];
+                const subcategories = subcategoriesByCategory.get(category) ?? [];
+                const activeSubcategory = subcategoryFilters[category];
+                const filteredEntries = activeSubcategory
+                  ? entries.filter((entry) => entry.subcategory === activeSubcategory)
+                  : entries;
 
                 return (
                   <details key={category} className="rounded-xl border border-white/15 bg-slate-900/65 p-3 transition hover:border-cyan-300/30">
@@ -340,11 +402,50 @@ export default function Home() {
                       <span className="inline-flex items-center gap-2">
                         <span>{meta.icon}</span>
                         <span>{meta.label}</span>
-                        <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs text-slate-200">{entries.length}</span>
+                        <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs text-slate-200">{filteredEntries.length}</span>
                       </span>
                     </summary>
                     <div className="mt-3 grid gap-3">
-                      {entries.map((entry) => (
+                      {subcategories.length > 0 && (
+                        <div className="flex flex-wrap gap-2 rounded-lg border border-white/10 bg-slate-950/50 p-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSubcategoryFilters((current) => ({
+                                ...current,
+                                [category]: null,
+                              }))
+                            }
+                            className={`rounded-full border px-3 py-1 text-xs transition ${
+                              !activeSubcategory
+                                ? "border-cyan-300/70 bg-cyan-400/20 text-cyan-100"
+                                : "border-white/20 bg-white/10 text-slate-200 hover:border-cyan-300/40"
+                            }`}
+                          >
+                            Alle
+                          </button>
+                          {subcategories.map((subcategory) => (
+                            <button
+                              key={subcategory}
+                              type="button"
+                              onClick={() =>
+                                setSubcategoryFilters((current) => ({
+                                  ...current,
+                                  [category]: subcategory,
+                                }))
+                              }
+                              className={`rounded-full border px-3 py-1 text-xs transition ${
+                                activeSubcategory === subcategory
+                                  ? "border-cyan-300/70 bg-cyan-400/20 text-cyan-100"
+                                  : "border-white/20 bg-white/10 text-slate-200 hover:border-cyan-300/40"
+                              }`}
+                            >
+                              {subcategory}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {filteredEntries.map((entry) => (
                         <article className="rounded-xl border border-white/10 bg-gradient-to-b from-slate-800/60 to-slate-900/70 p-4 shadow-lg transition duration-200 hover:-translate-y-0.5 hover:border-cyan-300/40 hover:shadow-cyan-500/20" key={entry.id}>
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <h3 className="text-lg font-semibold">{entry.name}</h3>
@@ -385,6 +486,11 @@ export default function Home() {
                           </div>
                         </article>
                       ))}
+                      {filteredEntries.length === 0 && (
+                        <p className="rounded-lg border border-white/10 bg-slate-950/40 p-3 text-sm text-slate-300">
+                          Keine Treffer für diese Unterkategorie.
+                        </p>
+                      )}
                     </div>
                   </details>
                 );

@@ -1,7 +1,51 @@
 import type { AppCategory } from "@/lib/types";
 
+const SUBCATEGORY_TRANSLATIONS: Record<string, string> = {
+  restaurant: "Restaurant",
+  cafe: "Café",
+  bar: "Bar",
+  pub: "Pub",
+  playground: "Spielplatz",
+  park: "Park",
+  museum: "Museum",
+  gallery: "Galerie",
+  theatre: "Theater",
+  cinema: "Kino",
+  hiking: "Wanderroute",
+  sports_centre: "Sportzentrum",
+  fitness_centre: "Fitnessstudio",
+  swimming_pool: "Schwimmbad",
+  zoo: "Zoo",
+};
+
+function normalizeSubcategoryLabel(value?: string): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) {
+    return undefined;
+  }
+
+  const translated = SUBCATEGORY_TRANSLATIONS[normalized];
+  if (translated) {
+    return translated;
+  }
+
+  const spaced = normalized.replace(/_/g, " ");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
 function pickSubcategory(...values: Array<string | undefined>): string | undefined {
-  return values.find((value) => typeof value === "string" && value.trim().length > 0)?.trim();
+  for (const value of values) {
+    const normalized = normalizeSubcategoryLabel(value);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return undefined;
 }
 
 function isLikelySportsClub(tags: Record<string, string>): boolean {
