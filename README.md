@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Freizeitfinder (v1)
 
-## Getting Started
+Eine einfache Next.js-Web-App, die **coole Freizeitaktivitäten in deiner Nähe** findet.
 
-First, run the development server:
+Du kannst entweder:
+- deinen aktuellen Standort verwenden (Browser-Geolocation), oder
+- eine Adresse/Stadt eingeben.
+
+Danach lädt die App passende Orte aus OpenStreetMap/Overpass, gruppiert sie in Kategorien und zeigt sie als saubere, einklappbare Liste an.
+
+## Features
+
+- Standort per Geolocation oder Adresssuche
+- Radius-Filter: 1 km, 3 km, 5 km, 10 km
+- Multi-Select für Kategorien
+- Ergebnisse gruppiert nach Kategorie mit einklappbaren Bereichen
+- Ergebnis-Karten mit Name, Kategorie, Distanz, Adresse, Öffnungszeiten und Kartenlinks
+- Loading-, Empty- und Error-States
+- Zod-Validierung der API-Requests
+- In-Memory-Cache für Aktivitäten (5 Minuten)
+
+## Kategorien (v1)
+
+- Hiking/Nature
+- Cinema/Movies
+- Sports
+- Culture/Museums
+- Food/Drink
+- Family/Kids
+- Other
+
+## Projekt starten
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+App öffnen unter: [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tests
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm test
+```
 
-## Learn More
+## Datenquellen
 
-To learn more about Next.js, take a look at the following resources:
+### 1) Nominatim (Geocoding)
+- Für die Umwandlung von Adresse/Stadt in Koordinaten.
+- Wird **serverseitig** über `/api/geocode` aufgerufen.
+- Mit `User-Agent` Header und clientseitigem Debounce (rate-limit-freundlich).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 2) Overpass API (POI-Suche)
+- Für Freizeit-Orte in einem Radius um lat/lon.
+- Wird über `/api/activities` aufgerufen.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 3) Kartenlinks
+- OpenStreetMap-Link und Google-Maps-Link pro Ergebnis.
 
-## Deploy on Vercel
+## Sample-URLs (erweiterbar)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Zusätzlich gibt es zentrale Beispiele in:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`lib/osm/source-examples.ts`
+
+Dort kannst du jederzeit weitere URL-/Query-Templates ergänzen.
+
+### Interne API
+- `/api/geocode?q=Berlin`
+- `/api/geocode?q=M%C3%BCnchen%20Hauptbahnhof`
+- `/api/activities?lat=52.52&lon=13.405&radius=5&categories=all`
+- `/api/activities?lat=48.1372&lon=11.5756&radius=10&categories=Culture%2FMuseums,Food%2FDrink`
+
+### Nominatim direkt (nur Referenz)
+- `https://nominatim.openstreetmap.org/search?q=Berlin&format=json&limit=5`
+- `https://nominatim.openstreetmap.org/search?q=Hamburg+Altona&format=json&addressdetails=1&limit=5`
+
+### Overpass direkt (nur Referenz)
+- `https://overpass-api.de/api/interpreter?data=[out:json][timeout:25];(node(around:5000,52.52,13.405)[amenity=cinema];way(around:5000,52.52,13.405)[tourism=museum];node(around:5000,52.52,13.405)[leisure=park];);out%20center%20tags;`
+- `https://overpass-api.de/api/interpreter?data=[out:json][timeout:25];(node(around:3000,48.1372,11.5756)[leisure=sports_centre];node(around:3000,48.1372,11.5756)[tourism=zoo];relation(around:3000,48.1372,11.5756)[route=hiking];);out%20center%20tags;`
+
+### Kartenlinks
+- `https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=16/{lat}/{lon}`
+- `https://www.google.com/maps/search/?api=1&query={lat},{lon}`
+
+## Struktur (wichtigste Ordner)
+
+- `app/` – UI + Route Handler
+- `app/api/geocode/route.ts` – Geocoding Endpoint
+- `app/api/activities/route.ts` – Aktivitäten Endpoint
+- `lib/osm/` – OSM-spezifische Clients/Mapping/Helper
+- `lib/utils/` – Utilities (z. B. Distanz)
+- `tests/` – Unit-Tests
+
+## Limitierungen in v1
+
+- Keine Nutzerkonten/Login
+- Keine Personalisierung
+- Keine Favoriten/Freundeslisten
+- Qualität/Verfügbarkeit hängt von OSM-Daten in der Region ab
+- Kein Karten-Frontend (nur Liste priorisiert)
+
+## Nächste Schritte
+
+- Personalisierung (Interessen, priorisierte Kategorien)
+- Favoriten speichern
+- Erweiterte Filter (z. B. nur „jetzt geöffnet“)
+- optionale Kartenansicht (Leaflet)
