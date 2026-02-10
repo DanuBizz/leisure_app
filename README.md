@@ -2,6 +2,8 @@
 
 Eine einfache Next.js-Web-App, die **coole Freizeitaktivitäten in deiner Nähe** findet.
 
+> Dieses Projekt wurde mit **Cline** und einem **OpenAI-Modell (Codex)** erstellt.
+
 Du kannst entweder:
 - deinen aktuellen Standort verwenden (Browser-Geolocation), oder
 - eine Adresse/Stadt eingeben.
@@ -109,3 +111,7 @@ Dort kannst du jederzeit weitere URL-/Query-Templates ergänzen.
 - Favoriten speichern
 - Erweiterte Filter (z. B. nur „jetzt geöffnet“)
 - optionale Kartenansicht (Leaflet)
+
+## Lizenz
+
+Dieses Projekt steht unter der **MIT-Lizenz**. Details siehe [LICENSE](./LICENSE).
