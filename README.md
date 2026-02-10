@@ -1,4 +1,4 @@
-# Freizeitfinder (v1)
+# VibeRadar (v1)
 
 Eine einfache Next.js-Web-App, die **coole Freizeitaktivitäten in deiner Nähe** findet.
 
@@ -19,15 +19,17 @@ Danach lädt die App passende Orte aus OpenStreetMap/Overpass, gruppiert sie in 
 - Zod-Validierung der API-Requests
 - In-Memory-Cache für Aktivitäten (5 Minuten)
 
-## Kategorien (v1)
+## Kategorien (v1, deutsch in der UI)
 
-- Hiking/Nature
-- Cinema/Movies
-- Sports
-- Culture/Museums
-- Food/Drink
-- Family/Kids
-- Other
+- 🥾 Wandern & Natur
+- 🎬 Kino & Filme
+- 💪 Sport & Fitness
+- 🏛️ Kultur & Museen
+- 🍽️ Essen & Trinken
+- 🧸 Familie & Kinder
+- 📍 Sonstiges
+
+Hinweis: Bei **Sport** wird in v1 stärker auf Sport-/Fitnessmöglichkeiten (z. B. Gym, Fitness, Yoga) gefiltert; klassische Vereins-/Club-Einträge werden weniger priorisiert.
 
 ## Projekt starten
 

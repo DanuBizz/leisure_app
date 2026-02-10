@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { GET as geocodeGet } from "../app/api/geocode/route";
 import { GET as activitiesGet } from "../app/api/activities/route";
+import { GET as reverseGeocodeGet } from "../app/api/reverse-geocode/route";
 import { clearCache } from "../lib/cache";
 
 const originalFetch = globalThis.fetch;
@@ -79,4 +80,47 @@ test("/api/activities ruft Overpass via fetch auf (mock fetch)", async (t) => {
 
   assert.equal(response.status, 200);
   assert.equal(body.results[0]?.name, "Beispielpark");
+});
+
+test("/api/reverse-geocode validiert lat/lon", async () => {
+  const request = new Request("http://localhost:3000/api/reverse-geocode?lat=200&lon=13.405");
+  const response = await reverseGeocodeGet(request);
+
+  assert.equal(response.status, 400);
+});
+
+test("/api/reverse-geocode liefert Adresse zurück (mock fetch)", async (t) => {
+  globalThis.fetch = (async () =>
+    new Response(
+      JSON.stringify({
+        display_name: "Musterstraße 1, 10115 Berlin, Deutschland",
+        lat: "52.52",
+        lon: "13.405",
+        address: {
+          road: "Musterstraße",
+          house_number: "1",
+          city: "Berlin",
+        },
+      }),
+      {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      },
+    )) as typeof fetch;
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const request = new Request("http://localhost:3000/api/reverse-geocode?lat=52.52&lon=13.405");
+  const response = await reverseGeocodeGet(request);
+  const body = (await response.json()) as {
+    result?: {
+      displayName: string;
+      shortLabel?: string;
+    };
+  };
+
+  assert.equal(response.status, 200);
+  assert.equal(body.result?.shortLabel, "Musterstraße 1, Berlin");
 });
