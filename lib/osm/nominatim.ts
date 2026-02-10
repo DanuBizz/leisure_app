@@ -56,12 +56,14 @@ export async function geocodeWithNominatim(query: string): Promise<GeocodeResult
   const payload = (await response.json()) as NominatimSearchItem[];
 
   return payload
+    .filter((item): item is NominatimSearchItem & { display_name: string; lat: string; lon: string } => {
+      const lat = Number(item.lat);
+      const lon = Number(item.lon);
+      return !!(item.display_name && !Number.isNaN(lat) && !Number.isNaN(lon));
+    })
     .map((item) => {
       const lat = Number(item.lat);
       const lon = Number(item.lon);
-      if (!item.display_name || Number.isNaN(lat) || Number.isNaN(lon)) {
-        return null;
-      }
 
       return {
         displayName: item.display_name,
@@ -69,8 +71,7 @@ export async function geocodeWithNominatim(query: string): Promise<GeocodeResult
         lat,
         lon,
       } satisfies GeocodeResult;
-    })
-    .filter((item): item is GeocodeResult => Boolean(item));
+    });
 }
 
 export async function reverseGeocodeNearestPlace(
